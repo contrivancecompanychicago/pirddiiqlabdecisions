@@ -1,7 +1,13 @@
-from flask import Flask, request, jsonify, abort
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from __future__ import annotations
+
+import json
 import os
+from datetime import datetime
+
+from flask import Flask, abort, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+
+from pirddiiqlab.decision_engine import build_decision_from_payload
 
 app = Flask(__name__)
 # Version 0 backend database: SQLite file (pirddiiqlab_v0.db) stored next to the app.
@@ -11,6 +17,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+
 # Import models after db is created
 class Item(db.Model):
     __tablename__ = "items"
@@ -18,6 +25,7 @@ class Item(db.Model):
     key = db.Column(db.String, unique=True, nullable=False)
     value = db.Column(db.String, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 class UpdateEvent(db.Model):
     __tablename__ = "updates"
@@ -38,7 +46,17 @@ def init_db():
 def items():
     if request.method == "GET":
         all_items = Item.query.all()
-        return jsonify([{"id": i.id, "key": i.key, "value": i.value, "updated_at": i.updated_at.isoformat() if i.updated_at else None} for i in all_items])
+        return jsonify(
+            [
+                {
+                    "id": i.id,
+                    "key": i.key,
+                    "value": i.value,
+                    "updated_at": i.updated_at.isoformat() if i.updated_at else None,
+                }
+                for i in all_items
+            ]
+        )
     data = request.get_json() or {}
     key = data.get("key")
     value = data.get("value")
@@ -59,13 +77,19 @@ def items():
 def item_detail(item_id):
     it = Item.query.get_or_404(item_id)
     if request.method == "GET":
-        return jsonify({"id": it.id, "key": it.key, "value": it.value, "updated_at": it.updated_at.isoformat() if it.updated_at else None})
+        return jsonify(
+            {
+                "id": it.id,
+                "key": it.key,
+                "value": it.value,
+                "updated_at": it.updated_at.isoformat() if it.updated_at else None,
+            }
+        )
     if request.method == "PUT":
         data = request.get_json() or {}
         it.value = data.get("value", it.value)
         db.session.commit()
         return jsonify({"status": "updated"})
-    # DELETE
     db.session.delete(it)
     db.session.commit()
     return jsonify({"status": "deleted"})
@@ -81,7 +105,6 @@ def on_update():
     source = data.get("source", "unknown")
     payload_text = None
     try:
-        import json
         payload_text = json.dumps(data)
     except Exception:
         payload_text = str(data)
@@ -106,9 +129,31 @@ def on_update():
             if existing:
                 db.session.delete(existing)
 
+    decision_response = {}
+    if str(source).lower() == "imhotep" or "imhotep" in (payload_text or "").lower():
+        decision_response = build_decision_from_payload(source, data.get("payload", data))
+        ev.payload = json.dumps({"incoming": data, "decision": decision_response})
+
+    db.session.commit()
+    response = {"status": "received", "source": source, "applied_op": op}
+    if decision_response:
+        response["decision"] = decision_response
+    return jsonify(response), 201
+
+
+@app.route("/imhotep/decision", methods=["POST"])
+def imhotep_decision():
+    """Evaluate incoming IMHOTEP payloads and produce an AI-style operational decision."""
+    data = request.get_json(silent=True) or {}
+    payload = data.get("payload", data)
+    source = (data.get("source") or "imhotep").strip() or "imhotep"
+    decision = build_decision_from_payload(source, payload)
+
+    event_payload = {"route": "/imhotep/decision", "incoming": data, "decision": decision}
+    db.session.add(UpdateEvent(source=source, payload=json.dumps(event_payload)))
     db.session.commit()
 
-    return jsonify({"status": "received", "source": source, "applied_op": op}), 201
+    return jsonify({"status": "ok", "source": source, "decision": decision}), 200
 
 
 @app.route("/health", methods=["GET"])
