@@ -1,4 +1,11 @@
-Flask==2.3.2
-Flask-SQLAlchemy==3.0.5
-SQLAlchemy==2.0.19
-Werkzeug==2.3.6
+"""
+pirddiiqlab: Health data and insights platform for human families.
+Version: 0.1.0
+"""
+
+__version__ = "0.1.0"
+__author__ = "make-DEEP-Human-Families-Healthy"
+
+from .backend import create_app
+
+__all__ = ["create_app", "__version__"]

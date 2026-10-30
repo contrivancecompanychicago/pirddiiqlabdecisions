@@ -1,18 +1,18 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pirddiiqlab"
-version = "0.0.0"
-description = "PIRDDIIQ Lab: Health data and insights platform for human families"
+version = "0.1.0"
+description = "PIRDDIIQ Lab: health-data platform with a fictional medical secretary intake knowledge base"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
+license = { text = "MIT" }
 authors = [
-    {name = "make-DEEP-Human-Families-Healthy", email = ""}
+    { name = "make-DEEP-Human-Families-Healthy", email = "" },
 ]
-keywords = ["health", "data", "platform", "families"]
+keywords = ["health", "data", "platform", "families", "medical-secretary", "colab"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
     "Flask>=2.0.0",
     "Flask-SQLAlchemy>=2.5.0",
+    "SQLAlchemy>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -39,8 +40,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/make-DEEP-Human-Families-Healthy/pirddiiqlab"
-Repository = "https://github.com/make-DEEP-Human-Families-Healthy/pirddiiqlab.git"
+Homepage = "https://github.com/contrivancecompanychicago/pirddiiqlabdecisions"
+Repository = "https://github.com/contrivancecompanychicago/pirddiiqlabdecisions.git"
 
 [project.scripts]
 pirddiiqlab-server = "pirddiiqlab.cli:main"
