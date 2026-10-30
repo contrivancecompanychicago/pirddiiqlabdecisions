@@ -33,3 +33,27 @@ def configure_colab_environment():
         "host": os.environ["HOST"],
         "port": os.environ["PORT"],
     }
+
+
+def launch_colab_app(host="0.0.0.0", port=8080, debug=False, db_path=None):
+    """Launch the Flask app in a notebook-friendly Colab environment.
+
+    Returns the app instance. In Colab, it also prints the public tunnel URL when
+    a ngrok/Cloudflare tunnel is configured externally.
+    """
+    from .backend import create_app
+
+    base_db_path = db_path or os.environ.get("PIRDDIIQLAB_DB_PATH")
+    if base_db_path is None and is_colab():
+        base_db_path = "/content/pirddiiqlab_v0.db"
+
+    app = create_app(db_path=base_db_path)
+    app.config["DEBUG"] = debug
+
+    if is_colab():
+        print("Colab environment detected.")
+        print(f"SQLite DB: {base_db_path or 'default'}")
+        print("Use a tunnel (for example ngrok or Cloudflare) to expose the app externally.")
+        print("Example: app.run(host='0.0.0.0', port=8080)")
+
+    return app
