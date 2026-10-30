@@ -6,6 +6,17 @@ This repository contains code and experiments for the pirddiiqlab project: a Pyt
 
 The repository includes an early Flask backend prototype and a growing set of local experiments. The backend remains suitable for local development and integration prototyping, but it is not a production clinical system or an approved medical workflow implementation.
 
+## Project evolution and provenance
+
+This repository was updated to integrate a small, fictionalized subset of ideas from the IMHOTEP Bizarros prototype repository:
+
+- Source repo: `contrivancecompanychicago/imhotep-bizarro-secretary-backend`
+- Purpose used here: a medical secretary / intake workflow reference, adapted into a minimal Flask app pattern
+- Scope retained: fictional scheduling, intake prompts, secretary-style workflow categories, and notebook-friendly API experimentation
+- Scope intentionally omitted: FastAPI stack, JWT auth, source research notebooks, real patient records, sensitive clinical data, and any claim of clinical validity or institutional approval
+
+This keeps the target repo aligned with its existing architecture and conventions while adding a small intake-oriented layer for demonstration use.
+
 ## Backend: Version 0 (`pirddiiqlab-backend-v0`)
 
 The current backend is a minimal Flask + SQLite service.
@@ -19,6 +30,7 @@ The current backend is a minimal Flask + SQLite service.
 - `pirddiiqlab/knowledge_base.py` — fictional intake knowledge-base reference adapted from the IMHOTEP prototype.
 - `pirddiiqlab/colab.py` — helpers for running in Google Colab.
 - `pirddiiqlab/openai_intake.py` — OpenAI-based fictional intake summarization for notebook demos.
+- `notebooks/colab_demo.ipynb` — notebook example for launching the Flask app and calling the intake endpoint in Colab.
 
 ### Current database
 
@@ -54,29 +66,13 @@ Example OpenAI intake payload:
 }
 ```
 
-## IMHOTEP integration note
+## OpenAI + Colab notebook workflow
 
-This repository incorporates a small, adapted subset of concepts from the IMHOTEP Bizarros backend prototype for a fictional medical secretary / intake workflow reference.
+This repository supports a minimal notebook-based intake demo. The goal is not to replace real clinical intake systems, but to demonstrate how a fictional secretary workflow could be built on top of this Flask app in a Colab environment.
 
-Included:
-- structured intake workflow categories
-- fictional-only secretary-style task prompts
-- knowledge-base documentation patterns with provenance notes
-- a minimal OpenAI-backed intake summarization flow for notebook demos
+### Colab setup
 
-Intentionally not included:
-- FastAPI app stack and JWT auth flow from the source repo
-- raw research notebooks or experimental artifacts
-- real patient records, private contact data, or sensitive clinical information
-- claims of medical validity, institutional approval, or production clinical readiness
-
-The source project is treated as a prototype/reference only and is adapted to fit the target repo's existing Flask architecture.
-
-## Google Colab support
-
-This repository is configured to run in Google Colab with a minimal environment setup.
-
-From a Colab notebook:
+From a Google Colab notebook:
 
 ```python
 !git clone https://github.com/contrivancecompanychicago/pirddiiqlabdecisions.git
@@ -97,7 +93,7 @@ app = launch_colab_app()
 app.run(host="0.0.0.0", port=8080)
 ```
 
-Run a sample intake request:
+### Example request
 
 ```python
 import requests
@@ -114,6 +110,33 @@ response = requests.post(
 )
 print(response.json())
 ```
+
+## Notebook example
+
+The repository includes a notebook example at:
+
+- `notebooks/colab_demo.ipynb`
+
+This notebook shows how to:
+
+- clone the repo in Colab
+- install dependencies
+- launch the local Flask app
+- call the fictional intake API from the notebook
+
+## Boundaries and safety notes
+
+This project is intentionally limited to fictional, non-identifying intake and scheduling examples.
+
+Do not use this repository to:
+
+- store real patient records
+- use real contact information
+- claim clinical effectiveness or approval
+- port raw research notebooks into production
+- rely on the source prototype as a validated clinical workflow
+
+The implementation is for local experimentation, prototype demos, and notebook-based workflows only.
 
 ## Running locally
 
