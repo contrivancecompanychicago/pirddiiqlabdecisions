@@ -4,9 +4,115 @@ This repository contains code and experiments for the pirddiiqlab project: a Pyt
 
 ## Current status
 
-The repository includes an early Flask backend prototype and standalone health-data experiments. The backend is currently suitable for local development and integration prototyping, but it is **not production-ready for medical or biological supply-chain data**.
+The repository includes an early Flask backend prototype and standalone health-data experiments. The backend is currently suitable for local development and integration prototyping, but it is not yet production-hardened.
 
-The planned target is to evolve the backend into an API-first inventory and supply-chain service for the University of Illinois at Chicago Process Automation Virtual Lab System. The first production-oriented milestone is a test-only inventory workflow; live integration should wait until authentication, authorization, validation, auditing, migrations, and deployment controls are implemented.
+The project has also evolved to include an operational decision layer for incoming IMHOTEP-style payloads. This gives the backend a deterministic, AI-inspired decision engine that can evaluate risk, severity, and confidence before taking action.
+
+## IMHOTEP decision engine
+
+The repository now includes a rule-based decision engine in `pirddiiqlab/decision_engine.py`.
+
+It evaluates incoming structured data and produces a normalized decision object containing:
+
+- `source`
+- `decision`
+- `risk_score`
+- `confidence`
+- `recommended_action`
+- `reason`
+- `input_summary`
+
+The decision logic intentionally does not depend on an external LLM. Instead, it uses deterministic scoring from key fields such as:
+
+- `risk`
+- `risk_score`
+- `severity`
+- `severity_score`
+- `priority`
+- `criticality`
+- `urgency`
+- `confidence`
+- `impact`
+
+It also interprets text severity markers such as `critical`, `urgent`, `warning`, `alert`, `fraud`, and `anomaly` to classify payloads.
+
+### Supported decisions
+
+The engine returns one of the following:
+
+- `approve`
+- `review`
+- `escalate`
+- `halt`
+
+The corresponding recommended actions are:
+
+- `continue`
+- `route_to_human_review`
+- `notify_operators`
+- `lock_and_investigate`
+
+## API routes
+
+The Flask application in `app.py` now includes:
+
+- `GET /health` — returns backend health and version information.
+- `GET/POST /items` — list or create/update key-value items.
+- `GET/PUT/DELETE /items/<id>` — manage a specific item.
+- `POST /update` — receives update events and optionally applies simple set/delete actions.
+- `POST /imhotep/decision` — evaluates incoming IMHOTEP payloads and returns an AI-style operational decision.
+
+### Example IMHOTEP decision request
+
+```json
+{
+  "source": "imhotep",
+  "payload": {
+    "severity": "critical",
+    "risk": 92,
+    "message": "Fraud alert, emergency escalation required."
+  }
+}
+```
+
+### Example IMHOTEP decision response
+
+```json
+{
+  "status": "ok",
+  "source": "imhotep",
+  "decision": {
+    "source": "imhotep",
+    "decision": "halt",
+    "risk_score": 100,
+    "confidence": 0.95,
+    "recommended_action": "lock_and_investigate",
+    "reason": "IMHOTEP signal indicates a clear operational decision based on priority, severity, and confidence thresholds.",
+    "input_summary": "{\"severity\": \"critical\", \"risk\": 92, \"message\": \"Fraud alert, emergency escalation required.\"}"
+  }
+}
+```
+
+## Test coverage and validation
+
+The repo now includes a small pytest suite in `tests/test_imhotep_decision.py` covering:
+
+- safe payload scoring
+- critical payload risk classification
+- `/update` integration for IMHOTEP payloads
+- `/imhotep/decision` route behavior
+
+This makes it straightforward to validate the scoring logic and endpoint behavior in CI or a local environment.
+
+The team also used a Google Colab workflow to validate the logic in a notebook environment, with the same test suite invoked via:
+
+```bash
+!git clone https://github.com/contrivancecompanychicago/pirddiiqlabdecisions.git
+%cd pirddiiqlabdecisions
+!pip install -q -r requirements.txt
+!pip install -q pytest
+!pytest tests/test_imhotep_decision.py -q
+```
 
 ## Backend: Version 0 (`pirddiiqlab-backend-v0`)
 
@@ -40,6 +146,7 @@ SQLite is appropriate for local development and demonstrations. A server-based d
 - `POST /update` — receive update events and optionally apply `set` or `delete` operations.
 - `GET /health` — return backend health and version information.
 - `GET/POST /init-db` — create missing prototype tables.
+- `POST /imhotep/decision` — evaluate incoming IMHOTEP payloads and return a structured decision.
 
 Example item payload:
 
@@ -87,7 +194,7 @@ The future versioned API should use routes such as:
 - `POST /api/v1/integrations/uic/events`
 - `GET /health`
 
-The UIC virtual lab should remain the user-facing system, while this service should become the source of truth for inventory and procurement records. Integration should use HTTPS, authenticated service credentials or OAuth/OIDC, request validation, idempotency keys, and audit logging.
+The UIC virtual lab should remain the user-facing system, while this service should become the source of truth for inventory and procurement records. Integration should use HTTPS, authenticated service-to-service keys, and auditable event records.
 
 ### Migration plan
 
@@ -131,11 +238,11 @@ The repository also contains standalone scripts and experiments, including:
 - Synthetic persona generation with `SyntheticFacebook.py`
 - Medication/adherence concepts in `SodiumButyrate*.py`
 
-These scripts currently operate independently on local files or sample data. They are not part of the Flask request path and should remain isolated from supply-chain operations until their inputs, outputs, validation, privacy, and testing are defined.
+These scripts currently operate independently on local files or sample data. They are not part of the Flask request path and should remain isolated from supply-chain operations until their inputs and outputs are better defined.
 
 ## Security note
 
-Do not place credentials, tokens, or other secrets in source control. Any credential previously committed in `Bard.py` should be considered compromised: revoke it, rotate it, and replace it with an environment variable or managed secret. The current v0 API has no authentication or authorization and must not accept untrusted production traffic.
+Do not place credentials, tokens, or other secrets in source control. Any credential previously committed in `Bard.py` should be considered compromised: revoke it, rotate it, and replace it with a secure environment variable or secret manager configuration.
 
 ## Running locally
 
