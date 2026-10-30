@@ -18,6 +18,7 @@ The current backend is a minimal Flask + SQLite service.
 - `pirddiiqlab/init.py` — package metadata and `create_app` export.
 - `pirddiiqlab/knowledge_base.py` — fictional intake knowledge-base reference adapted from the IMHOTEP prototype.
 - `pirddiiqlab/colab.py` — helpers for running in Google Colab.
+- `pirddiiqlab/openai_intake.py` — OpenAI-based fictional intake summarization for notebook demos.
 
 ### Current database
 
@@ -38,18 +39,19 @@ SQLite is appropriate for local development and demonstrations.
 - `POST /update` — receive update events and optionally apply `set` or `delete` operations.
 - `GET /health` — return backend health and version information.
 - `GET /api/v1/intake/knowledge-base` — return a fictional medical secretary intake knowledge base adapted from the IMHOTEP prototype.
+- `POST /api/v1/intake/openai` — summarize a fictional intake payload using OpenAI when configured.
 - `GET /init-db` — create missing prototype tables.
 
-Example item payload:
+Example OpenAI intake payload:
 
 ```json
-{"key": "mykey", "value": "some value"}
-```
-
-Example update payload:
-
-```json
-{"source": "frontend", "type": "set", "key": "mykey", "value": "some value"}
+{
+  "patient_name": "Sample Fictional Patient",
+  "reason_for_visit": "New patient intake and scheduling needs",
+  "appointment_type": "Follow-up visit",
+  "preferred_contact": "Email",
+  "insurance_status": "Fictional coverage pending review"
+}
 ```
 
 ## IMHOTEP integration note
@@ -60,6 +62,7 @@ Included:
 - structured intake workflow categories
 - fictional-only secretary-style task prompts
 - knowledge-base documentation patterns with provenance notes
+- a minimal OpenAI-backed intake summarization flow for notebook demos
 
 Intentionally not included:
 - FastAPI app stack and JWT auth flow from the source repo
@@ -71,7 +74,7 @@ The source project is treated as a prototype/reference only and is adapted to fi
 
 ## Google Colab support
 
-This repository is also configured to run in Google Colab with a minimal environment setup.
+This repository is configured to run in Google Colab with a minimal environment setup.
 
 From a Colab notebook:
 
@@ -79,17 +82,38 @@ From a Colab notebook:
 !git clone https://github.com/contrivancecompanychicago/pirddiiqlabdecisions.git
 %cd pirddiiqlabdecisions
 !pip install -e .
+!pip install openai
 ```
 
-Then start the app:
+Then set the API key and start the app:
 
 ```python
-from pirddiiqlab.backend import create_app
-app = create_app()
+import os
+os.environ["OPENAI_API_KEY"] = "sk-..."
+
+from pirddiiqlab.colab import launch_colab_app
+
+app = launch_colab_app()
 app.run(host="0.0.0.0", port=8080)
 ```
 
-The helper in `pirddiiqlab.colab` automatically sets the default SQLite path to `/content/pirddiiqlab_v0.db` when running in Colab.
+Run a sample intake request:
+
+```python
+import requests
+
+response = requests.post(
+    "http://127.0.0.1:8080/api/v1/intake/openai",
+    json={
+        "patient_name": "Sample Fictional Patient",
+        "reason_for_visit": "New patient intake and scheduling needs",
+        "appointment_type": "Follow-up visit",
+        "preferred_contact": "Email",
+        "insurance_status": "Fictional coverage pending review",
+    },
+)
+print(response.json())
+```
 
 ## Running locally
 
