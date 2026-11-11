@@ -1,0 +1,10 @@
+{
+  "patientId": "demo-patient-001",
+  "scanId": "demo-right-foot",
+  "capturedAt": "2026-04-15T10:00:00Z",
+  "laterality": "right",
+  "storagePath": "foot-scans/demo-patient-001/demo-patient-001-right-foot.glb",
+  "fileFormat": "model/gltf-binary",
+  "synthetic": true,
+  "description": "Synthetic stylized model for viewer testing only; not a patient scan or clinical model."
+}
