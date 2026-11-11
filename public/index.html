@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#102b3f" />
+    <title>Foot Scan Viewer</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer@4.1.0/dist/model-viewer.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172b3a;
+        background: #f3f7f8;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; }
+      main { width: min(1050px, 100% - 32px); margin: 40px auto; }
+      header { margin-bottom: 24px; }
+      h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 3vw, 2.3rem); }
+      p { line-height: 1.55; }
+      .intro { margin: 0; color: #526777; }
+      .panel { overflow: hidden; border: 1px solid #d6e1e6; border-radius: 16px; background: #fff; box-shadow: 0 10px 30px #16364b0d; }
+      .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #e4ecef; }
+      .button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; padding: 0 16px; border: 0; border-radius: 8px; background: #126b70; color: white; font: inherit; font-weight: 650; cursor: pointer; }
+      .button:hover { background: #0c5559; }
+      .button:focus-visible, input:focus-visible { outline: 3px solid #f1b84b; outline-offset: 3px; }
+      #filename { color: #526777; font-size: .92rem; overflow-wrap: anywhere; }
+      .stage { position: relative; min-height: 480px; background: radial-gradient(ellipse at center, #fff 0%, #edf4f6 100%); }
+      model-viewer { width: 100%; height: min(68vh, 680px); min-height: 480px; --poster-color: transparent; }
+      .empty { position: absolute; inset: 0; display: grid; place-content: center; padding: 24px; text-align: center; color: #526777; pointer-events: none; }
+      .empty strong { color: #172b3a; font-size: 1.1rem; }
+      .empty p { max-width: 430px; margin: 8px auto 0; }
+      .hidden { display: none; }
+      .hint { margin: 14px 0 0; color: #526777; font-size: .9rem; }
+      .notice { margin-top: 20px; padding: 14px 16px; border-left: 4px solid #d49b26; border-radius: 4px; background: #fff8e8; color: #574414; font-size: .9rem; }
+      .error { width: 100%; margin: 0; color: #a52b2b; font-size: .92rem; }
+      @media (max-width: 600px) { main { margin: 24px auto; } .stage, model-viewer { min-height: 380px; } model-viewer { height: 55vh; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>3D Foot Scan Viewer</h1>
+        <p class="intro">Open a 3D foot scan, then drag to rotate, scroll or pinch to zoom, and use two fingers to pan.</p>
+      </header>
+      <section class="panel" aria-label="3D foot scan viewer">
+        <div class="toolbar">
+          <label class="button" for="scan-file">Choose a 3D scan</label>
+          <input class="hidden" id="scan-file" type="file" accept=".glb,model/gltf-binary" />
+          <span id="filename" aria-live="polite">No scan selected</span>
+          <p id="error" class="error" role="alert"></p>
+        </div>
+        <div id="drop-zone" class="stage">
+          <model-viewer id="viewer" class="hidden" camera-controls touch-action="pan-y" shadow-intensity="0.8" exposure="1" alt="Locally selected 3D foot scan"></model-viewer>
+          <div id="empty-state" class="empty">
+            <div><strong>Your 3D scan will appear here</strong><p>Select or drop a binary glTF (.glb) scan. Files are loaded locally in this browser and are not uploaded by this page.</p></div>
+          </div>
+        </div>
+      </section>
+      <p class="hint">Supported format: .glb (binary glTF). Export the scan from your 3D scanner or imaging workflow in this format before opening it here.</p>
+      <aside class="notice"><strong>Clinical privacy:</strong> This viewer is a visualization aid, not a diagnostic tool. It does not store scans in Firebase or calculate risk. Use only de-identified or otherwise authorized data, and follow your organization’s privacy and security requirements. Firebase Hosting serves this page; the selected scan stays in this browser session.</aside>
+    </main>
+    <script>
+      const input = document.getElementById('scan-file');
+      const viewer = document.getElementById('viewer');
+      const emptyState = document.getElementById('empty-state');
+      const filename = document.getElementById('filename');
+      const error = document.getElementById('error');
+      const dropZone = document.getElementById('drop-zone');
+      let activeObjectUrl = null;
+
+      function openScan(file) {
+        error.textContent = '';
+        if (!file) return;
+        if (!file.name.toLowerCase().endsWith('.glb')) {
+          error.textContent = 'Please choose a .glb (binary glTF) file.';
+          input.value = '';
+          return;
+        }
+        if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+        activeObjectUrl = URL.createObjectURL(file);
+        viewer.src = activeObjectUrl;
+        viewer.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+        filename.textContent = file.name;
+      }
+
+      input.addEventListener('change', () => openScan(input.files && input.files[0]));
+      viewer.addEventListener('error', () => {
+        error.textContent = 'The scan could not be displayed. Check that it is a valid, supported .glb file.';
+      });
+      window.addEventListener('beforeunload', () => {
+        if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+      });
+      for (const eventName of ['dragenter', 'dragover']) {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.style.outline = '3px solid #126b70';
+        });
+      }
+      for (const eventName of ['dragleave', 'drop']) {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.style.outline = '';
+        });
+      }
+      dropZone.addEventListener('drop', (event) => openScan(event.dataTransfer.files && event.dataTransfer.files[0]));
+    </script>
+  </body>
+</html>
