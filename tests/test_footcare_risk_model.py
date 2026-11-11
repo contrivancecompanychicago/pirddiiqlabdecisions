@@ -13,8 +13,8 @@ def write_artifact(path):
         "feature_names": ["age", "sex_f", "age1", "age2", "creatinine1", "creatinine2",
                           "Hb_A1C1", "Hb_A1C2", "albumin1"],
         "coefficients": [0.01, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-        "knots": {"age": [40, 60, 80], "creatinine": [40, 80, 120],
-                  "hba1c": [5, 7, 9], "albumin": [20, 30, 40]},
+        "knots": {"age": [40, 60, 80, 100], "creatinine": [40, 80, 120, 160],
+                  "hba1c": [5, 7, 9, 12], "albumin": [20, 30, 40, 50]},
         "baseline_times_days": [0, 365.25, 730.5],
         "baseline_cumulative_subhazard": [0, 0.01, 0.02],
         "reference_linear_predictor": 0,
@@ -34,10 +34,9 @@ def patient(**changes):
     return pd.DataFrame([values])
 
 
-def test_rcs_basis_has_linear_and_nonlinear_columns():
-    basis = restricted_cubic_spline_basis([40, 60, 80, 100], [40, 60, 80])
+def test_rcs_basis_contains_only_nonlinear_columns():
+    basis = restricted_cubic_spline_basis([40, 60, 80, 100], [40, 60, 80, 100])
     assert basis.shape == (4, 2)
-    assert np.array_equal(basis[:, 0], [40, 60, 80, 100])
     assert np.all(np.isfinite(basis))
 
 

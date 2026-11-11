@@ -29,12 +29,12 @@ class ModelArtifactError(ValueError):
 
 
 def restricted_cubic_spline_basis(values: Sequence[float], knots: Sequence[float]) -> np.ndarray:
-    """Return the ``x`` and nonlinear basis columns used by ``rms::rcs``.
+    """Return only the nonlinear columns from ``rms::rcs(..., norm=2)``.
 
-    This is Harrell's restricted cubic spline basis with ``norm=2``, the
-    default used by ``rms::rcs``. The first output column is the linear x
-    column (named ``<variable>1`` in the original demo); remaining columns
-    are nonlinear components (``<variable>2``, etc.).
+    The original model separately includes each untransformed continuous
+    predictor (for example ``age``) and adds the nonlinear columns as
+    ``age1``, ``age2``, etc. This function therefore deliberately does not
+    return the linear x column.
     """
     x = np.asarray(values, dtype=float)
     k = np.asarray(knots, dtype=float)
@@ -43,10 +43,8 @@ def restricted_cubic_spline_basis(values: Sequence[float], knots: Sequence[float
     if np.any(np.diff(k) <= 0):
         raise ValueError("knots must be strictly increasing")
 
-    # rms::rcspline.eval(norm=2): one restricted cubic column per interior
-    # knot except the final two; divide by the squared total knot range.
-    columns = [x]
     denominator = (k[-1] - k[0]) ** 2
+    columns = []
     for j in range(len(k) - 2):
         first = np.maximum(x - k[j], 0.0) ** 3
         penultimate = np.maximum(x - k[-2], 0.0) ** 3
@@ -78,7 +76,6 @@ def _numeric_column(frame: pd.DataFrame, name: str, *, allow_missing: bool = Fal
 def _prepare_features(data: pd.DataFrame, artifact: Mapping[str, Any]) -> dict[str, np.ndarray]:
     if not isinstance(data, pd.DataFrame) or data.empty:
         raise ValueError("data must be a non-empty pandas DataFrame")
-    n = len(data)
     features: dict[str, np.ndarray] = {}
 
     for name in PREDICTORS:
@@ -112,7 +109,7 @@ def _prepare_features(data: pd.DataFrame, artifact: Mapping[str, Any]) -> dict[s
     return features
 
 
-def _feature_values(name: str, features: Mapping[str, np.ndarray], n: int) -> np.ndarray:
+def _feature_values(name: str, features: Mapping[str, np.ndarray]) -> np.ndarray:
     """Resolve ordinary terms and R's logical TRUE/FALSE dummy names."""
     if name in features:
         return features[name]
@@ -183,12 +180,8 @@ class FootCareRiskModel:
             raise ValueError(f"Requested time exceeds artifact horizon ({self.times[-1]:g} days)")
 
         features = _prepare_features(data, {"knots": self.knots})
-        design = np.column_stack([
-            _feature_values(name, features, len(data)) for name in self.feature_names
-        ])
+        design = np.column_stack([_feature_values(name, features) for name in self.feature_names])
         linear_predictor = design @ self.coefficients
-        # Baseline is a right-continuous cumulative subhazard curve, as in
-        # riskRegression predictions. At t=0 the risk is zero.
         positions = np.searchsorted(self.times, requested, side="right") - 1
         h0 = np.where(positions < 0, 0.0, self.baseline[np.maximum(positions, 0)])
         cumulative_hazard = np.exp(np.clip(linear_predictor, -700, 700))[:, None] * h0[None, :]
