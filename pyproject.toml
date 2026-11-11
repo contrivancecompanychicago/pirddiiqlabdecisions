@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pirddiiqlab"
-version = "0.0.0"
+version = "0.1.0"
 description = "PIRDDIIQ Lab health data platform and FootCare risk model utilities"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -39,6 +39,10 @@ pirddiiq-footcare-risk-rds = "footcare_risk_model.rds_cli:main"
 
 [tool.setuptools]
 packages = ["pirddiiqlab", "footcare_risk_model"]
+
+[tool.setuptools.package-data]
+pirddiiqlab = ["py.typed"]
+footcare_risk_model = ["py.typed"]
 
 [tool.black]
 line-length = 100
