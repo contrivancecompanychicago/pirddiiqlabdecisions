@@ -1,9 +1,7 @@
 # Diabetes Foot Risk Prediction Model in Google Colab
 
-The step-by-step notebook is [`diabetes_foot_risk_colab.ipynb`](diabetes_foot_risk_colab.ipynb). Open it directly in [Google Colab](https://colab.research.google.com/github/contrivancecompanychicago/pirddiiqlabdecisions/blob/main/notebooks/diabetes_foot_risk_colab.ipynb), or open the notebook in this repository and choose **Open in Colab**.
+Start with [`diabetes_foot_risk_colab.ipynb`](diabetes_foot_risk_colab.ipynb). It is a Python-only Colab walkthrough: clone this repository and the upstream model repo, install the package and the pure-Python `rdata` reader, load the upstream RDS model directly, and predict risk. **No R installation or R code is needed.**
 
-The walkthrough clones this repository and the upstream model repository, installs R only for the one-time conversion of the official `.rds` model to JSON, then installs and uses the Python package to predict risk. CSV scoring is optional. No R knowledge is needed to follow the notebook cells.
+The same Python interface is available locally after installing the project: `from footcare_risk_model.rds_model import load_rds_model`. The notebook includes CSV upload/scoring and a command-line example.
 
-The JSON model artifact is generated within the temporary Colab runtime and is not included in Git. For local Python prediction, follow [`../footcare_risk_model/README.md`](../footcare_risk_model/README.md) to create the artifact and install the package.
-
-**Clinical/privacy caution:** This research/educational model is not a medical device and does not provide a diagnosis. Never upload identifiable or confidential patient information to hosted Colab; use only approved, de-identified data in accordance with your organization's policies.
+The published model is a research/educational tool, not a diagnosis or substitute for clinical judgment. Never upload identifiable or confidential patient data to hosted Colab; follow your organization's approved data-handling policies.

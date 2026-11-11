@@ -29,20 +29,13 @@ class ModelArtifactError(ValueError):
 
 
 def restricted_cubic_spline_basis(values: Sequence[float], knots: Sequence[float]) -> np.ndarray:
-    """Return only the nonlinear columns from ``rms::rcs(..., norm=2)``.
-
-    The original model separately includes each untransformed continuous
-    predictor (for example ``age``) and adds the nonlinear columns as
-    ``age1``, ``age2``, etc. This function therefore deliberately does not
-    return the linear x column.
-    """
+    """Return only the nonlinear columns from ``rms::rcs(..., norm=2)``."""
     x = np.asarray(values, dtype=float)
     k = np.asarray(knots, dtype=float)
     if k.ndim != 1 or len(k) < 3 or not np.all(np.isfinite(k)):
         raise ValueError("knots must contain at least three finite values")
     if np.any(np.diff(k) <= 0):
         raise ValueError("knots must be strictly increasing")
-
     denominator = (k[-1] - k[0]) ** 2
     columns = []
     for j in range(len(k) - 2):
@@ -77,7 +70,6 @@ def _prepare_features(data: pd.DataFrame, artifact: Mapping[str, Any]) -> dict[s
     if not isinstance(data, pd.DataFrame) or data.empty:
         raise ValueError("data must be a non-empty pandas DataFrame")
     features: dict[str, np.ndarray] = {}
-
     for name in PREDICTORS:
         is_lab = name in LABS
         values = _numeric_column(data, name, allow_missing=is_lab)
@@ -105,12 +97,10 @@ def _prepare_features(data: pd.DataFrame, artifact: Mapping[str, Any]) -> dict[s
         basis = restricted_cubic_spline_basis(features[variable], artifact["knots"][knot_key])
         for index in range(basis.shape[1]):
             features[f"{variable}{index + 1}"] = basis[:, index]
-
     return features
 
 
 def _feature_values(name: str, features: Mapping[str, np.ndarray]) -> np.ndarray:
-    """Resolve ordinary terms and R's logical TRUE/FALSE dummy names."""
     if name in features:
         return features[name]
     for suffix, value in (("TRUE", 1.0), ("FALSE", 0.0)):
@@ -123,12 +113,7 @@ def _feature_values(name: str, features: Mapping[str, np.ndarray]) -> np.ndarray
 
 
 class FootCareRiskModel:
-    """Predict cumulative incidence of foot complications from an exported model.
-
-    The JSON artifact is generated from the repository's validated R model by
-    ``export_model.R``. Time values and predictions are in days and probability
-    units, respectively.
-    """
+    """Predict cumulative incidence of foot complications from a fitted model."""
 
     def __init__(self, model_path: str | Path | None = None):
         path = Path(model_path) if model_path else Path(__file__).with_name(MODEL_FILENAME)
@@ -142,7 +127,6 @@ class FootCareRiskModel:
             ) from exc
         except json.JSONDecodeError as exc:
             raise ModelArtifactError(f"Invalid JSON model artifact: {path}") from exc
-
         try:
             names = artifact["feature_names"]
             coefficients = np.asarray(artifact["coefficients"], dtype=float)
@@ -178,7 +162,6 @@ class FootCareRiskModel:
             raise ValueError("times_days cannot be negative")
         if np.any(requested > self.times[-1]):
             raise ValueError(f"Requested time exceeds artifact horizon ({self.times[-1]:g} days)")
-
         features = _prepare_features(data, {"knots": self.knots})
         design = np.column_stack([_feature_values(name, features) for name in self.feature_names])
         linear_predictor = design @ self.coefficients

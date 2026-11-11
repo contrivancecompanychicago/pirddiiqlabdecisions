@@ -9,9 +9,7 @@ description = "PIRDDIIQ Lab health data platform and FootCare risk model utiliti
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
-authors = [
-    {name = "make-DEEP-Human-Families-Healthy"}
-]
+authors = [{name = "make-DEEP-Human-Families-Healthy"}]
 keywords = ["health", "data", "platform", "families", "diabetes", "risk-model"]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -24,21 +22,11 @@ classifiers = [
     "Intended Audience :: Healthcare Industry",
 ]
 
-dependencies = [
-    "Flask>=2.0.0",
-    "Flask-SQLAlchemy>=2.5.0",
-    "numpy>=1.23",
-    "pandas>=1.5",
-]
+dependencies = ["Flask>=2.0.0", "Flask-SQLAlchemy>=2.5.0", "numpy>=1.23", "pandas>=1.5"]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
-    "black>=23.0",
-    "flake8>=6.0",
-    "mypy>=1.0",
-]
+rds = ["rdata>=1.0"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "black>=23.0", "flake8>=6.0", "mypy>=1.0"]
 
 [project.urls]
 Homepage = "https://github.com/contrivancecompanychicago/pirddiiqlabdecisions"
@@ -47,6 +35,7 @@ Repository = "https://github.com/contrivancecompanychicago/pirddiiqlabdecisions.
 [project.scripts]
 pirddiiqlab-server = "pirddiiqlab.cli:main"
 pirddiiq-footcare-risk = "footcare_risk_model.cli:main"
+pirddiiq-footcare-risk-rds = "footcare_risk_model.rds_cli:main"
 
 [tool.setuptools]
 packages = ["pirddiiqlab", "footcare_risk_model"]
