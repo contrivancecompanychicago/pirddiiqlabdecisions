@@ -2,15 +2,33 @@
 
 This repository contains code and experiments for the pirddiiqlab project: a Python health-data and insights platform for human families.
 
+## Package status
+
+The project is now structured as an installable Python package. The package entry point is `pirddiiqlab`, with package metadata exposed via `pirddiiqlab/__init__.py` and version `0.1.0`.
+
+The package is intended to be installed from the repository root with:
+
+```bash
+python -m pip install -e .
+```
+
+This installs the packaged backend and the CLI entry points for the project, including:
+
+- `pirddiiqlab-server`
+- `pirddiiq-footcare-risk`
+- `pirddiiq-footcare-risk-rds`
+
+The project metadata and distribution configuration are defined in `pyproject.toml`, and the source distribution includes both the backend package and the standalone FootCare model package.
+
 ## Current status
 
-The repository includes an early Flask backend prototype and standalone health-data experiments. The backend is currently suitable for local development and integration prototyping, but it is not yet production-hardened.
+The repository includes an early Flask backend prototype, a packaged Python module for the backend, and standalone health-data experiments. The backend is suitable for local development and integration prototyping, but it is not yet intended for production deployment without additional security, validation, and operational hardening.
 
-The project has also evolved to include an operational decision layer for incoming IMHOTEP-style payloads. This gives the backend a deterministic, AI-inspired decision engine that can evaluate risk, severity, and confidence before taking action.
+The project has also evolved to include an operational decision layer for incoming IMHOTEP-style payloads. This gives the backend a deterministic, AI-inspired decision engine that can evaluate risk, triage events, and return structured recommendations without relying on an external LLM.
 
 ## IMHOTEP decision engine
 
-The repository now includes a rule-based decision engine in `pirddiiqlab/decision_engine.py`.
+The repository includes a rule-based decision engine in `pirddiiqlab/decision_engine.py`.
 
 It evaluates incoming structured data and produces a normalized decision object containing:
 
@@ -95,12 +113,13 @@ The Flask application in `app.py` now includes:
 
 ## Test coverage and validation
 
-The repo now includes a small pytest suite in `tests/test_imhotep_decision.py` covering:
+The repo includes a pytest suite covering:
 
 - safe payload scoring
 - critical payload risk classification
 - `/update` integration for IMHOTEP payloads
 - `/imhotep/decision` route behavior
+- FootCare model preprocessing, risk calculations, and validation logic
 
 This makes it straightforward to validate the scoring logic and endpoint behavior in CI or a local environment.
 
@@ -123,9 +142,10 @@ The current backend is a minimal Flask + SQLite service.
 - `app.py` — standalone Flask application and legacy v0 API.
 - `pirddiiqlab/backend.py` — Flask application factory, SQLAlchemy models, and packaged API routes.
 - `pirddiiqlab/cli.py` — command-line server launcher.
-- `pirddiiqlab/init.py` — package metadata and `create_app` export.
+- `pirddiiqlab/__init__.py` — package metadata and import surface for installed usage.
+- `pirddiiqlab/init.py` — legacy module retained for compatibility and package metadata.
 
-The repository currently contains two similar backend entry points. They should be consolidated before production deployment so that the application, models, routes, and configuration have one source of truth.
+The repository currently contains two similar backend entry points. They should be consolidated before production deployment so that the application, models, routes, and configuration have one single source of truth.
 
 ### Current database
 
@@ -159,6 +179,26 @@ Example update payload:
 ```json
 {"source": "frontend", "type": "set", "key": "mykey", "value": "some value"}
 ```
+
+## FootCare risk model package
+
+The repository includes a separate installable package for the Diabetes Foot Complications Fine-Gray model at `footcare_risk_model/`.
+
+This package is published as part of the overall `pirddiiqlab` project and exposes a Python API plus command-line access.
+
+Install the package with:
+
+```bash
+python -m pip install -e .
+```
+
+Then use the package API or command-line tools:
+
+```bash
+pirddiiq-footcare-risk patients.csv scored_patients.csv --model footcare_risk_model/footcare_fgr_model.json --days 365.25 730.5
+```
+
+The package requires Python 3.9+, NumPy, and pandas. The optional RDS loader also supports `rdata` through the `rds` extra.
 
 ## Planned inventory and supply-chain architecture
 
@@ -194,7 +234,7 @@ The future versioned API should use routes such as:
 - `POST /api/v1/integrations/uic/events`
 - `GET /health`
 
-The UIC virtual lab should remain the user-facing system, while this service should become the source of truth for inventory and procurement records. Integration should use HTTPS, authenticated service-to-service keys, and auditable event records.
+The UIC virtual lab should remain the user-facing system, while this service should become the source of truth for inventory and procurement records. Integration should use HTTPS, authenticated sessions, and explicit contract validation.
 
 ### Migration plan
 
@@ -238,11 +278,11 @@ The repository also contains standalone scripts and experiments, including:
 - Synthetic persona generation with `SyntheticFacebook.py`
 - Medication/adherence concepts in `SodiumButyrate*.py`
 
-These scripts currently operate independently on local files or sample data. They are not part of the Flask request path and should remain isolated from supply-chain operations until their inputs and outputs are better defined.
+These scripts currently operate independently on local files or sample data. They are not part of the Flask request path and should remain isolated from supply-chain operations until their inputs and outputs are formalized.
 
 ## Security note
 
-Do not place credentials, tokens, or other secrets in source control. Any credential previously committed in `Bard.py` should be considered compromised: revoke it, rotate it, and replace it with a secure environment variable or secret manager configuration.
+Do not place credentials, tokens, or other secrets in source control. Any credential previously committed in `Bard.py` should be considered compromised: revoke it, rotate it, and replace it with a safe secret-management approach.
 
 ## Running locally
 
@@ -251,8 +291,8 @@ Python 3.9 or newer is required.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+python -m pip install -e '.[dev,rds]'
+python -m pirddiiqlab.cli --port 8080
 ```
 
 The server listens on the `PORT` environment variable when set, or port `8080` by default.
@@ -264,17 +304,17 @@ pip install -e .
 pirddiiqlab-server --port 8080
 ```
 
-The package layout and CLI should be tested and corrected before relying on the packaged command in deployment.
+The repo also supports direct model loading from upstream RDS files when the optional `rds` extra is installed.
 
 ## Development dependencies
 
 The `pyproject.toml` file defines optional development dependencies for pytest, coverage, Black, Flake8, and mypy:
 
 ```bash
-pip install -e ".[dev]"
+python -m pip install -e '.[dev,rds]'
 ```
 
-The repository should add a test suite before the backend is connected to the UIC virtual lab.
+This keeps the local development environment aligned with the project’s package setup and ensures the packaged CLI and model tooling can be exercised in test and CI contexts.
 
 ## License
 
