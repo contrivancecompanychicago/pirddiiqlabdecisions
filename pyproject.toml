@@ -9,7 +9,7 @@ description = "PIRDDIIQ Lab health data platform and FootCare risk model utiliti
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
-authors = [{name = "make-DEEP-Human-Families-Healthy"}]
+authors = [{name = "Eric Hilary Smith", email = "erichilarysmithsr@gmail.com"}]
 keywords = ["health", "data", "platform", "families", "diabetes", "risk-model"]
 classifiers = [
     "Programming Language :: Python :: 3",
